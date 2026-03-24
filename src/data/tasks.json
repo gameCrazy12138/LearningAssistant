@@ -1,0 +1,109 @@
+[
+  {
+    "id": 1,
+    "title": "1",
+    "description": "1",
+    "task_type": "数值型",
+    "target_value": 100.0,
+    "unit": "%",
+    "current_value": 160.0,
+    "sub_tasks": [],
+    "status": "已完成",
+    "progress": 100.0,
+    "progress_history": [
+      {
+        "timestamp": "2026-03-24T22:43:11.772251",
+        "value": 10,
+        "note": "",
+        "progress": 10.0,
+        "current_value": 10.0
+      },
+      {
+        "timestamp": "2026-03-24T22:43:13.239822",
+        "value": 50,
+        "note": "",
+        "progress": 60.0,
+        "current_value": 60.0
+      },
+      {
+        "timestamp": "2026-03-24T22:43:14.562304",
+        "value": 50,
+        "note": "",
+        "progress": 100.0,
+        "current_value": 110.0
+      },
+      {
+        "timestamp": "2026-03-24T22:43:17.384442",
+        "value": 50,
+        "note": "",
+        "progress": 100.0,
+        "current_value": 160.0
+      }
+    ],
+    "created_at": "2026-03-24T22:43:10.412217",
+    "updated_at": "2026-03-24T22:43:17.384442",
+    "target_progress": 100.0
+  },
+  {
+    "id": 2,
+    "title": "2",
+    "description": "2",
+    "task_type": "树型",
+    "target_value": 100.0,
+    "unit": "%",
+    "current_value": 0.0,
+    "sub_tasks": [
+      {
+        "id": 2001,
+        "title": "22",
+        "description": "2",
+        "target_value": 100.0,
+        "unit": "%",
+        "current_value": 0.0,
+        "sub_tasks": [],
+        "status": "未开始",
+        "progress": 0,
+        "progress_history": [],
+        "target_progress": 100.0,
+        "created_at": "2026-03-24T23:25:05.916447",
+        "updated_at": "2026-03-24T23:25:05.916447"
+      },
+      {
+        "id": 2002,
+        "title": "222",
+        "description": "2",
+        "target_value": 100.0,
+        "unit": "%",
+        "current_value": 0.0,
+        "sub_tasks": [],
+        "status": "未开始",
+        "progress": 0,
+        "progress_history": [],
+        "target_progress": 100.0,
+        "created_at": "2026-03-24T23:25:11.480333",
+        "updated_at": "2026-03-24T23:25:11.480333"
+      },
+      {
+        "id": 2003,
+        "title": "333",
+        "description": "33",
+        "target_value": 100.0,
+        "unit": "%",
+        "current_value": 0.0,
+        "sub_tasks": [],
+        "status": "未开始",
+        "progress": 0,
+        "progress_history": [],
+        "target_progress": 100.0,
+        "created_at": "2026-03-24T23:29:37.577210",
+        "updated_at": "2026-03-24T23:29:37.577210"
+      }
+    ],
+    "status": "未开始",
+    "progress": 0,
+    "progress_history": [],
+    "created_at": "2026-03-24T23:25:02.437476",
+    "updated_at": "2026-03-24T23:29:37.577210",
+    "target_progress": 100.0
+  }
+]

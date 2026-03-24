@@ -1,0 +1,11 @@
+# Learning Assistant - Python Dependencies
+
+# Kivy - Cross-platform GUI framework
+Kivy==2.2.0
+Kivy-Garden==0.1.5
+
+# Optional: Notification support (enable when needed)
+# plyer==2.1.0
+
+# Optional: App directory management (use for packaging)
+# appdirs==1.4.4
