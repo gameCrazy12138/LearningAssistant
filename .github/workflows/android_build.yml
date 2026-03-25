@@ -26,7 +26,7 @@ jobs:
     
     - name: Install Android SDK
       run: |
-        # 使用一致的环境变量路径
+        # 设置环境变量
         export ANDROID_HOME=$HOME/android-sdk
         export ANDROID_SDK_ROOT=$HOME/android-sdk
         
@@ -46,6 +46,15 @@ jobs:
         # 安装必需组件
         sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0" "ndk;25.2.9519653"
         
+        # 🔥 关键：使用 GITHUB_ENV 持久化环境变量到后续步骤
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        
+        # 🔥 关键：使用 GITHUB_PATH 持久化 PATH 到后续步骤
+        echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+        echo "$ANDROID_HOME/build-tools/31.0.0" >> $GITHUB_PATH
+        
         # 验证安装
         echo "=== Installed build-tools ==="
         ls -la $ANDROID_HOME/build-tools/
@@ -60,10 +69,11 @@ jobs:
     
     - name: Build APK
       run: |
-        # 使用与安装时相同的环境变量
-        export ANDROID_HOME=$HOME/android-sdk
-        export ANDROID_SDK_ROOT=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/31.0.0
+        # 🔥 环境变量已通过 GITHUB_ENV 自动设置，无需重复
+        # 验证环境变量
+        echo "=== Environment Variables ==="
+        echo "ANDROID_HOME=$ANDROID_HOME"
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
         
         # 验证 build-tools 存在
         echo "=== Checking build-tools ==="
@@ -72,10 +82,8 @@ jobs:
         cd android_build
         # 显式设置 Buildozer 使用的 SDK 路径
         export BUILDOZER_SPEC_ANDROID_SDK_PATH=$ANDROID_HOME
+        export BUILDOZER_SPEC_ANDROID_NDK_PATH=$ANDROID_HOME/ndk/25.2.9519653
         buildozer android debug
-      env:
-        ANDROID_HOME: /home/runner/android-sdk
-        ANDROID_SDK_ROOT: /home/runner/android-sdk
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
