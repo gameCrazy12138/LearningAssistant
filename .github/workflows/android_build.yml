@@ -65,6 +65,12 @@ jobs:
             libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             openjdk-17-jdk autoconf automake libtool libtool-bin autoconf-archive \
             pkg-config cmake ninja-build
+        
+        # 🔥 关键修复：提前准备 libtool 宏文件补丁
+        # 使用 base64 编码避免 YAML 解析问题
+        echo 'IyEvYmluL2Jhc2gKTElCRkZJX0JBU0U9Ii9ob21lL3J1bm5lci8uYnVpbGRvemVyL2FuZHJvaWQvcGxhdGZvcm0vYnVpbGQtYXJtNjQtdjhhX2FybWVhYmkgdjdhL2J1aWxkL290aGVyX2J1aWxkcy9saWJmZmkiCmZvciBpIGluIHsxLi42MH07IGRvCiAgICBpZiBbIC1kICIkTElCRkZJX0JBU0UiIF07IHRoZW4KICAgICAgICBMSUJGRklfU1JDPSQoZmluZCAiJExJQkZGSU9CQVNFIiAtbWF4ZGVwdGggMSAtdHlwZSBkIC1uYW1lICJsaWJmZmkiIDI+L2Rldi9udWxsIHwgaGVhZCAtMSkKICAgICAgICBpZiBbIC1kICIkTElCRkZJX1NSQy9tNCIgXTsgdGhlbgogICAgICAgICAgICBpZiAhIGdyZXAgLXEgIkxUX1NZU19TWU1CT0xfVVNDT1JFIiAiJExJQkZGSV9TUkMvbTRvbHRvb2wubTQiOyB0aGVuCiAgICAgICAgICAgICAgICBjYXQgPj4gIiRMSUJGRklfU1JDL200L2xpYnRvb2wubTQiIDw8ICdNQUNST0VPRicKIyBMVF9TWVNfU1lNQk9MX1VTQ09SRQptNGRlZnVuKFtfTFRfRlVOQ19ETExNQUlOXSwgW10pCm00ZGVmdW4oW0xUX1NZU19TWU1CT0xfVVNDT1JFXSwgWwogIEFDX0NBQ0hFX0NIRUNLKFt3aGV0aGVyIF8gcHJlZml4IHNob3VsZCBiZSBhZGRlZCB0byBDIGlkZW50aWZpZXJzXSwKICAgIFtsdF9jdl9zeXNfc3ltYm9sX3VuZGVyc2NvcmVdLAogICAgW2x0X2N2X3N5c19zeW1ib2xfdW5kZXJzY29yZT1ub10pCiAgc3lzX3N5bWJvbF91bmRlcnNjb3JlPSRsdF9jdl9zeXNfc3ltYm9sX3VuZGVyc2NvcmVdKQpNQUNST0VPRgogICAgICAgICAgICAgICAgZWNobyAiQWRkZWQgTFRfU1lTX1NZTUJPTF9VU0NPUkUgbWFjcm8iCiAgICAgICAgICAgIGZpCiAgICAgICAgICAgIGJyZWFrCiAgICAgICAgZmkKICAgIGZpCiAgICBzbGVlcCAxCmRvbmU=' | base64 -d > /tmp/patch_libffi_macros.sh
+        chmod +x /tmp/patch_libffi_macros.sh
+        /tmp/patch_libffi_macros.sh &
     
     - name: Build APK
       run: |
