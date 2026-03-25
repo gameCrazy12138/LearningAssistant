@@ -44,13 +44,15 @@ jobs:
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
         
         # 安装必需组件
-        sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+        sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0" "ndk;25.2.9519653"
         
         # 验证安装
         echo "=== Installed build-tools ==="
         ls -la $ANDROID_HOME/build-tools/
         echo "=== Aidl location ==="
         ls -la $ANDROID_HOME/build-tools/31.0.0/aidl 2>/dev/null || echo "aidl not found!"
+        echo "=== NDK location ==="
+        ls -la $ANDROID_HOME/ndk/ 2>/dev/null || echo "NDK not found!"
     
     - name: Install dependencies
       run: |
@@ -68,10 +70,12 @@ jobs:
         ls -la $ANDROID_HOME/build-tools/31.0.0/ || echo "build-tools not found!"
         
         cd android_build
+        # 显式设置 Buildozer 使用的 SDK 路径
+        export BUILDOZER_SPEC_ANDROID_SDK_PATH=$ANDROID_HOME
         buildozer android debug
       env:
-        ANDROID_HOME: $HOME/android-sdk
-        ANDROID_SDK_ROOT: $HOME/android-sdk
+        ANDROID_HOME: /home/runner/android-sdk
+        ANDROID_SDK_ROOT: /home/runner/android-sdk
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
