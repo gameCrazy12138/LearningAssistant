@@ -65,7 +65,30 @@ jobs:
     
     - name: Install dependencies
       run: |
+        # 安装 Buildozer 和 Cython
         pip install buildozer cython==3.0.0
+        
+        # 🔥 关键修复：安装 python-for-android 所需的编译依赖
+        sudo apt-get update
+        sudo apt-get install -y \
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff-dev \
+            libfreetype6-dev \
+            libgstreamer1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            openjdk-17-jdk \
+            autoconf \
+            automake \
+            libtool
     
     - name: Build APK
       run: |
@@ -159,6 +182,9 @@ jobs:
         
         # 确保 PATH 优先使用复制的 SDK
         export PATH=$ANDROIDSDKPATH/cmdline-tools/latest/bin:$ANDROIDSDKPATH/platform-tools:$ANDROIDSDKPATH/build-tools/31.0.0:$PATH
+        
+        # 🔥 设置 Buildozer 日志级别为 DEBUG 以查看详细错误
+        export BUILDOZER_LOGLEVEL=2
         
         # 运行 Buildozer
         buildozer android debug
