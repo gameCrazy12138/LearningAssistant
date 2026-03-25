@@ -99,41 +99,8 @@ jobs:
         export ACLOCAL_PATH="/usr/share/aclocal:/usr/local/share/aclocal"
         
         # 🔥 关键修复：创建包装脚本替换 libffi 的 autogen.sh
-        # Buildozer 会在 libffi 源码目录执行 autogen.sh，我们提前创建一个包装脚本
-        cat > /tmp/wrap_autogen.sh << 'EOF'
-#!/bin/bash
-# 监控 libffi 目录并替换 autogen.sh
-
-LIBFFI_BASE="/home/runner/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/libffi"
-
-# 轮询等待 libffi 目录创建
-while true; do
-    if [ -d "$LIBFFI_BASE" ]; then
-        # 找到 libffi 源码目录
-        LIBFFI_SRC=$(find "$LIBFFI_BASE" -maxdepth 1 -type d -name "libffi" 2>/dev/null | head -1)
-        
-        if [ -d "$LIBFFI_SRC" ] && [ -f "$LIBFFI_SRC/autogen.sh" ]; then
-            # 备份原始 autogen.sh
-            if [ ! -f "$LIBFFI_SRC/autogen.sh.bak" ]; then
-                cp "$LIBFFI_SRC/autogen.sh" "$LIBFFI_SRC/autogen.sh.bak"
-                
-                # 复制宏文件到 m4 目录
-                M4_DIR="$LIBFFI_SRC/m4"
-                mkdir -p "$M4_DIR"
-                cp /usr/share/aclocal/libtool.m4 "$M4_DIR/" 2>/dev/null || true
-                cp /usr/share/aclocal/ltoptions.m4 "$M4_DIR/" 2>/dev/null || true
-                cp /usr/share/aclocal/ltsugar.m4 "$M4_DIR/" 2>/dev/null || true
-                cp /usr/share/aclocal/ltversion.m4 "$M4_DIR/" 2>/dev/null || true
-                cp /usr/share/aclocal/lt~obsolete.m4 "$M4_DIR/" 2>/dev/null || true
-                
-                echo "✓ Patched libffi at $LIBFFI_SRC"
-            fi
-        fi
-    fi
-    sleep 0.5
-done
-EOF
-        
+        # 使用 base64 编码避免 YAML 解析问题
+        echo 'IyEvYmluL2Jhc2gKTElCRkZJX0JBU0U9Ii9ob21lL3J1bm5lci8uYnVpbGRvemVyL2FuZHJvaWQvcGxhdGZvcm0vYnVpbGQtYXJtNjQtdjhhX2FybWVhYmkgdjdhL2J1aWxkL290aGVyX2J1aWxkcy9saWJmZmkiCndoaWxlIHRydWU7IGRvCiAgICBpZiBbIC1kICIkTElCRkZJX0JBU0UiIF07IHRoZW4KICAgICAgICBMSUJGRklfU1JDPSQoZmluZCAiJExJQkZGSU9CQVNFIiAtbWF4ZGVwdGggMSAtdHlwZSBkIC1uYW1lICJsaWJmZmkiIDI+L2Rldi9udWxsIHwgaGVhZCAtMSkKICAgICAgICBpZiBbIC1kICIkTElCRkZJX1NSQyIgXSAmJiBbIC1mICIkTElCRkZJX1NSQy9hdXRvZ2VuLnNoIiBdOyB0aGVuCiAgICAgICAgICAgIGlmIFsgISAtZiAiJExJQkZGSV9TUkMvYXV0b2dlbi5zaC5iYWsiIF07IHRoZW4KICAgICAgICAgICAgICAgIGNwICIkTElCRkZJX1NSQy9hdXRvZ2VuLnNoIiAiJExJQkZGSV9TUkMvYXV0b2dlbi5zaC5iYWsiCiAgICAgICAgICAgICAgICBNNE9ESVI9IiRMSUJGRklfU1JDL200IgogICAgICAgICAgICAgICAgbWtkaXIgLXAgIiRNNERJUiIKICAgICAgICAgICAgICAgIGNwIC91c3Ivc2hhcmUvYWNsb2NhbC9saWJ0b29sLm00ICIkTTRESVIvIiAyPi9kZXYvbnVsbCB8fCB0cnVlCiAgICAgICAgICAgICAgICBjcCAvdXNyL3NoYXJlL2FjbG9jYWwvbHRvcHRpb25zLm00ICIkTTRESVIvIiAyPi9kZXYvbnVsbCB8fCB0cnVlCiAgICAgICAgICAgICAgICBjcCAvdXNyL3NoYXJlL2FjbG9jYWwvbHRzdWdhci5tNCAiJE00RElSLyIgMj4vZGV2L251bGwgfHwgdHJ1ZQogICAgICAgICAgICAgICAgY3AgL3Vzci9zaGFyZS9hY2xvY2FsL2x0dmVyc2lvbi5tNCAiJE00RElSLyIgMj4vZGV2L251bGwgfHwgdHJ1ZQogICAgICAgICAgICAgICAgY3AgL3Vzci9zaGFyZS9hY2xvY2FsL2x0fm9ic29sZXRlLm00ICIkTTRESVIvIiAyPi9kZXYvbnVsbCB8fCB0cnVlCiAgICAgICAgICAgICAgICBlY2hvICJQYXRjaGVkIGxpYmZmaSBhdCAkTElCRkZJX1NSQyIKICAgICAgICAgICAgZmkKICAgICAgICBmaQogICAgZmkKICAgIHNsZWVwIDAuNQpkb25l' | base64 -d > /tmp/wrap_autogen.sh
         chmod +x /tmp/wrap_autogen.sh
         
         # 在后台运行包装脚本
