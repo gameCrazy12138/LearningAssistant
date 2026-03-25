@@ -98,7 +98,23 @@ jobs:
         # 验证 sdkmanager 可执行
         echo "=== Testing sdkmanager ==="
         chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --version || echo "sdkmanager test failed"
+        
+        # 检查符号链接实际指向
+        echo "Symlink target:"
+        readlink -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "readlink failed"
+        
+        # 检查文件是否存在
+        echo "File check:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "sdkmanager not found"
+        
+        # 尝试执行并捕获详细错误
+        echo "=== Running sdkmanager --version ==="
+        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --version 2>&1 || {
+            echo "sdkmanager failed, checking Java..."
+            java -version 2>&1
+            echo "Trying with explicit Java..."
+            java -jar /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager.jar --version 2>&1 || echo "jar method also failed"
+        }
         
         # 验证
         echo "=== SDK verification ==="
