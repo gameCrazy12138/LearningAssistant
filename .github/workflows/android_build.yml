@@ -171,8 +171,7 @@ jobs:
         ls -la $ANDROID_HOME/build-tools/31.0.0/ || echo "build-tools not found!"
         
         cd android_build
-        # 🔥 关键修复：让 Buildozer 直接使用复制后的 SDK
-        # Buildozer 会在 SDK 目录中添加 platform-tools 等，所以必须使用 .buildozer 目录
+        # 🔥 关键修复：让 Buildozer 直接使用复制后的 SDK 和 NDK
         export ANDROIDSDKPATH=/home/runner/.buildozer/android/platform/android-sdk
         export ANDROIDNDKPATH=/home/runner/.buildozer/android/platform/android-sdk/ndk/25.2.9519653
         
@@ -185,6 +184,19 @@ jobs:
         
         # 🔥 设置 Buildozer 日志级别为 DEBUG 以查看详细错误
         export BUILDOZER_LOGLEVEL=2
+        
+        # 🔥 验证 NDK 路径存在
+        echo "=== Verifying NDK path ==="
+        ls -la $ANDROIDNDKPATH || echo "NDK not found at $ANDROIDNDKPATH"
+        test -d $ANDROIDNDKPATH && echo "✓ NDK directory exists!" || echo "✗ NDK directory NOT exists!"
+        
+        # 🔥 验证 SDK 路径存在
+        echo "=== Verifying SDK path ==="
+        ls -la $ANDROIDSDKPATH || echo "SDK not found at $ANDROIDSDKPATH"
+        test -d $ANDROIDSDKPATH && echo "✓ SDK directory exists!" || echo "✗ SDK directory NOT exists!"
+        
+        # 🔥 清理 Buildozer 缓存，强制使用新路径
+        rm -rf /home/runner/.buildozer/android/platform/android-ndk-r25b
         
         # 运行 Buildozer
         buildozer android debug
