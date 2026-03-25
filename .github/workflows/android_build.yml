@@ -121,13 +121,23 @@ jobs:
         ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib \
                /home/runner/.buildozer/android/platform/android-sdk/tools/lib
         
-        # 创建 lib64 目录符号链接（sdkmanager 依赖）
-        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib64 \
-               /home/runner/.buildozer/android/platform/android-sdk/tools/lib64
+        # 🔥 关键修复：检查 lib64 是否存在，不存在则创建空目录
+        if [ -d /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib64 ]; then
+            ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib64 \
+                   /home/runner/.buildozer/android/platform/android-sdk/tools/lib64
+            echo "lib64 symlink created"
+        else
+            mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/lib64
+            echo "lib64 directory created (original not found)"
+        fi
         
         # 🔥 关键修复 2：确保 sdkmanager 可执行并设置 JAVA_HOME
         export JAVA_HOME=$JAVA_HOME_17_X64
         export PATH=$JAVA_HOME/bin:$PATH
+        
+        # 🔥 检查原始 lib64 目录是否存在
+        echo "=== Checking original lib64 ==="
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/ | grep lib64 || echo "lib64 not found in cmdline-tools/latest"
         
         # 验证 sdkmanager 可执行
         echo "=== Testing sdkmanager ==="
