@@ -91,6 +91,15 @@ jobs:
         ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin \
                /home/runner/.buildozer/android/platform/android-sdk/tools/bin
         
+        # 🔥 关键修复 2：确保 sdkmanager 可执行并设置 JAVA_HOME
+        export JAVA_HOME=$JAVA_HOME_17_X64
+        export PATH=$JAVA_HOME/bin:$PATH
+        
+        # 验证 sdkmanager 可执行
+        echo "=== Testing sdkmanager ==="
+        chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --version || echo "sdkmanager test failed"
+        
         # 验证
         echo "=== SDK verification ==="
         echo "cmdline-tools:"
