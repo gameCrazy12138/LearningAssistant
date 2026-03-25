@@ -20,7 +20,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install buildozer
+        pip install buildozer cython==3.0.0
     
     - name: Build APK
       run: |
