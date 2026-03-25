@@ -26,7 +26,6 @@ jobs:
     
     - name: Install Android SDK
       run: |
-        # 设置环境变量
         export ANDROID_HOME=$HOME/android-sdk
         export ANDROID_SDK_ROOT=$HOME/android-sdk
         
@@ -37,25 +36,17 @@ jobs:
         mkdir -p cmdline-tools/latest
         mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
         
-        # 添加到 PATH
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
-        # 强制接受所有许可证
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        
-        # 安装必需组件
         sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0" "ndk;25.2.9519653"
         
-        # 关键：使用 GITHUB_ENV 持久化环境变量到后续步骤
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        
-        # 关键：使用 GITHUB_PATH 持久化 PATH 到后续步骤
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
         echo "$ANDROID_HOME/build-tools/31.0.0" >> $GITHUB_PATH
         
-        # 验证安装
         echo "=== Installed build-tools ==="
         ls -la $ANDROID_HOME/build-tools/
         echo "=== Aidl location ==="
@@ -66,99 +57,62 @@ jobs:
     - name: Install dependencies
       run: |
         pip install buildozer cython==3.0.0
+        sudo apt-get update
+        sudo apt-get install -y \
+            build-essential git ffmpeg \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libpng-dev libjpeg-dev libtiff-dev libfreetype6-dev \
+            libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            openjdk-17-jdk autoconf automake libtool autoconf-archive
     
     - name: Build APK
       run: |
-        # 环境变量已通过 GITHUB_ENV 自动设置
-        # 验证环境变量
-        echo "=== Environment Variables ==="
-        echo "ANDROID_HOME=$ANDROID_HOME"
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+        # 清除可能冲突的预置 NDK 环境变量
+        unset ANDROID_NDK ANDROID_NDK_HOME ANDROID_NDK_ROOT ANDROID_NDK_LATEST_HOME
         
-        # 关键修复：直接复制整个 SDK 到 Buildozer 期望的位置，避免符号链接冲突
-        # Buildozer 默认在 ~/.buildozer/android/platform/android-sdk/ 查找 SDK
-        
-        # 删除任何现存的符号链接或目录，确保清洁状态
-        rm -rf /home/runner/.buildozer/android/platform/android-sdk
-        
-        # 直接复制整个 SDK，不使用符号链接
-        mkdir -p /home/runner/.buildozer/android/platform
-        cp -r /home/runner/android-sdk /home/runner/.buildozer/android/platform/
-        
-        # 🔥 关键修复：Buildozer 期望在 tools/bin/sdkmanager 找到 sdkmanager
-        # 但现代 SDK 使用 cmdline-tools/latest，需要创建符号链接
-        # 注意：sdkmanager 需要 lib/和 lib64/目录中的依赖库
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools
-        
-        # 创建 bin 目录符号链接
-        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin \
-               /home/runner/.buildozer/android/platform/android-sdk/tools/bin
-        
-        # 创建 lib 目录符号链接（sdkmanager 依赖）
-        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib \
-               /home/runner/.buildozer/android/platform/android-sdk/tools/lib
-        
-        # 创建 lib64 目录符号链接（sdkmanager 依赖）
-        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib64 \
-               /home/runner/.buildozer/android/platform/android-sdk/tools/lib64
-        
-        # 🔥 关键修复 2：确保 sdkmanager 可执行并设置 JAVA_HOME
+        # 设置 JAVA_HOME
         export JAVA_HOME=$JAVA_HOME_17_X64
         export PATH=$JAVA_HOME/bin:$PATH
         
-        # 验证 sdkmanager 可执行
-        echo "=== Testing sdkmanager ==="
-        chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        # 复制 SDK 到 Buildozer 期望的位置
+        rm -rf /home/runner/.buildozer/android/platform/android-sdk
+        mkdir -p /home/runner/.buildozer/android/platform
+        cp -r /home/runner/android-sdk /home/runner/.buildozer/android/platform/
         
-        # 检查符号链接实际指向
-        echo "Symlink target:"
-        readlink -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "readlink failed"
+        ANDROID_SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
         
-        # 检查文件是否存在
-        echo "File check:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "sdkmanager not found"
+        # 修复 sdkmanager 路径：直接复制 cmdline-tools/latest 为 tools
+        rm -rf $ANDROID_SDK_ROOT/tools
+        cp -r $ANDROID_SDK_ROOT/cmdline-tools/latest $ANDROID_SDK_ROOT/tools
         
-        # 尝试执行并捕获详细错误
-        echo "=== Running sdkmanager --version ==="
-        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --version 2>&1 || {
-            echo "sdkmanager failed, checking Java..."
-            java -version 2>&1
-            echo "Trying with explicit Java..."
-            java -jar /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager.jar --version 2>&1 || echo "jar method also failed"
-        }
+        # 创建 NDK 兼容符号链接
+        ln -sf $ANDROID_SDK_ROOT/ndk/25.2.9519653 $ANDROID_SDK_ROOT/android-ndk-r25b
         
-        # 验证
-        echo "=== SDK verification ==="
-        echo "cmdline-tools:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/ || true
-        echo "tools directory:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/ || true
-        echo "bin symlink:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
-        echo "lib symlink:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/lib/ || true
-        echo "lib64 symlink:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/lib64/ || true
-        echo "sdkmanager verification:"
-        test -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
-        test -x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager is executable!" || echo "✗ sdkmanager NOT executable!"
+        # 设置正确的 NDK 环境变量
+        export ANDROIDNDKPATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653
+        export ANDROID_NDK=$ANDROIDNDKPATH
+        export ANDROID_NDK_HOME=$ANDROIDNDKPATH
+        export ANDROID_NDK_ROOT=$ANDROIDNDKPATH
         
-        # 验证 build-tools 存在
-        echo "=== Checking build-tools ==="
-        ls -la $ANDROID_HOME/build-tools/31.0.0/ || echo "build-tools not found!"
+        # 设置 aclocal 宏路径
+        export ACLOCAL_PATH="/usr/share/aclocal:/usr/local/share/aclocal"
+        
+        # 验证 sdkmanager 可用
+        echo "Testing sdkmanager..."
+        $ANDROID_SDK_ROOT/tools/bin/sdkmanager --version || exit 1
         
         cd android_build
-        # 🔥 关键修复：让 Buildozer 直接使用复制后的 SDK
-        # Buildozer 会在 SDK 目录中添加 platform-tools 等，所以必须使用 .buildozer 目录
-        export ANDROIDSDKPATH=/home/runner/.buildozer/android/platform/android-sdk
-        export ANDROIDNDKPATH=/home/runner/.buildozer/android/platform/android-sdk/ndk/25.2.9519653
         
-        # 显式设置 Buildozer 配置中的路径
-        export BUILDOZER_SPEC_ANDROID_SDK_PATH=$ANDROIDSDKPATH
-        export BUILDOZER_SPEC_ANDROID_NDK_PATH=$ANDROIDNDKPATH
+        # 修改 buildozer.spec 中的路径
+        sed -i "s|# android.sdk_path = .*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
+        sed -i "s|# android.ndk_path = .*|android.ndk_path = $ANDROIDNDKPATH|" buildozer.spec
+        sed -i "s|# android.ndk = .*|android.ndk = 25.2.9519653|" buildozer.spec
         
-        # 确保 PATH 优先使用复制的 SDK
-        export PATH=$ANDROIDSDKPATH/cmdline-tools/latest/bin:$ANDROIDSDKPATH/platform-tools:$ANDROIDSDKPATH/build-tools/31.0.0:$PATH
+        # 添加 SDK 工具到 PATH
+        export PATH=$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/31.0.0:$PATH
+        
+        # 可选：开启详细日志
+        export BUILDOZER_LOGLEVEL=2
         
         # 运行 Buildozer
         buildozer android debug
