@@ -85,14 +85,23 @@ jobs:
         mkdir -p /home/runner/.buildozer/android/platform
         cp -r /home/runner/android-sdk /home/runner/.buildozer/android/platform/
         
+        # 🔥 关键修复：Buildozer 期望在 tools/bin/sdkmanager 找到 sdkmanager
+        # 但现代 SDK 使用 cmdline-tools/latest，需要创建符号链接
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools
+        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin \
+               /home/runner/.buildozer/android/platform/android-sdk/tools/bin
+        
         # 验证
         echo "=== SDK verification ==="
         echo "cmdline-tools:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/ || true
         echo "tools directory:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/ || true
+        echo "bin symlink:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
         echo "sdkmanager verification:"
-        test -f /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
+        test -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
+        test -x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager is executable!" || echo "✗ sdkmanager NOT executable!"
         
         # 验证 build-tools 存在
         echo "=== Checking build-tools ==="
