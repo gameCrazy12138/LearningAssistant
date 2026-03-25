@@ -198,6 +198,15 @@ jobs:
         # 🔥 清理 Buildozer 缓存，强制使用新路径
         rm -rf /home/runner/.buildozer/android/platform/android-ndk-r25b
         
+        # 🔥 关键修复：直接修改 buildozer.spec 文件中的 NDK 路径
+        # Buildozer 会优先读取配置文件而不是环境变量
+        sed -i "s|# android.ndk_path = .*|android.ndk_path = $ANDROIDNDKPATH|" buildozer.spec
+        sed -i "s|# android.sdk_path = .*|android.sdk_path = $ANDROIDSDKPATH|" buildozer.spec
+        
+        # 验证修改
+        echo "=== Updated buildozer.spec ==="
+        grep "android.ndk_path\|android.sdk_path" buildozer.spec
+        
         # 运行 Buildozer
         buildozer android debug
     
