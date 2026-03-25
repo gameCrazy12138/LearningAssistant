@@ -87,9 +87,20 @@ jobs:
         
         # 🔥 关键修复：Buildozer 期望在 tools/bin/sdkmanager 找到 sdkmanager
         # 但现代 SDK 使用 cmdline-tools/latest，需要创建符号链接
+        # 注意：sdkmanager 需要 lib/和 lib64/目录中的依赖库
         mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools
+        
+        # 创建 bin 目录符号链接
         ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin \
                /home/runner/.buildozer/android/platform/android-sdk/tools/bin
+        
+        # 创建 lib 目录符号链接（sdkmanager 依赖）
+        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib \
+               /home/runner/.buildozer/android/platform/android-sdk/tools/lib
+        
+        # 创建 lib64 目录符号链接（sdkmanager 依赖）
+        ln -sf /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/lib64 \
+               /home/runner/.buildozer/android/platform/android-sdk/tools/lib64
         
         # 🔥 关键修复 2：确保 sdkmanager 可执行并设置 JAVA_HOME
         export JAVA_HOME=$JAVA_HOME_17_X64
@@ -124,6 +135,10 @@ jobs:
         ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/ || true
         echo "bin symlink:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
+        echo "lib symlink:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/lib/ || true
+        echo "lib64 symlink:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/lib64/ || true
         echo "sdkmanager verification:"
         test -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
         test -x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager is executable!" || echo "✗ sdkmanager NOT executable!"
