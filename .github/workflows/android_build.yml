@@ -46,11 +46,11 @@ jobs:
         # 安装必需组件
         sdkmanager "platform-tools" "platforms;android-31" "build-tools;31.0.0" "ndk;25.2.9519653"
         
-        # 🔥 关键：使用 GITHUB_ENV 持久化环境变量到后续步骤
+        # 关键：使用 GITHUB_ENV 持久化环境变量到后续步骤
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         
-        # 🔥 关键：使用 GITHUB_PATH 持久化 PATH 到后续步骤
+        # 关键：使用 GITHUB_PATH 持久化 PATH 到后续步骤
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
         echo "$ANDROID_HOME/build-tools/31.0.0" >> $GITHUB_PATH
@@ -69,34 +69,44 @@ jobs:
     
     - name: Build APK
       run: |
-        # 🔥 环境变量已通过 GITHUB_ENV 自动设置
+        # 环境变量已通过 GITHUB_ENV 自动设置
         # 验证环境变量
         echo "=== Environment Variables ==="
         echo "ANDROID_HOME=$ANDROID_HOME"
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
         
-        # 🔥 关键修复：创建符号链接，让 Buildozer 能找到 SDK
+        # 关键修复：创建符号链接，让 Buildozer 能找到 SDK
         # Buildozer 默认在 ~/.buildozer/android/platform/android-sdk/ 查找 SDK
         # 我们创建符号链接指向实际安装的 SDK 位置
         mkdir -p /home/runner/.buildozer/android/platform
         ln -sf /home/runner/android-sdk /home/runner/.buildozer/android/platform/android-sdk
         
-        # 🔥 关键修复 2：创建完整的 tools/bin 目录结构
-        # Buildozer 期望在 tools/bin/sdkmanager 找到 sdkmanager
-        # 但现代 SDK 使用 cmdline-tools/latest，需要创建兼容链接
-        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin
-        ln -sf /home/runner/android-sdk/cmdline-tools/latest/bin /home/runner/.buildozer/android/platform/android-sdk/tools/bin
+        # 关键修复 2：复制 cmdline-tools 到 Buildozer 期望的位置
+        # 符号链接可能有兼容性问题，直接复制更可靠
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+        cp -r /home/runner/android-sdk/cmdline-tools/latest /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/
         
-        # 验证符号链接
+        # 关键修复 3：创建 tools 目录结构并复制所有工具
+        # Buildozer 期望在 tools/bin/ 下找到 sdkmanager 等工具
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools
+        cp -r /home/runner/android-sdk/cmdline-tools/latest /home/runner/.buildozer/android/platform/android-sdk/tools/latest
+        
+        # 创建 tools/bin 到 latest/bin 的符号链接（混合方案）
+        ln -sf /home/runner/.buildozer/android/platform/android-sdk/tools/latest/bin /home/runner/.buildozer/android/platform/android-sdk/tools/bin
+        
+        # 验证
         echo "=== Symlink verification ==="
         echo "SDK symlink:"
         ls -la /home/runner/.buildozer/android/platform/ || true
-        echo "Tools symlink:"
+        echo "cmdline-tools:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/ || true
+        echo "tools directory:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/ || true
         echo "bin symlink:"
         ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
         echo "sdkmanager verification:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager 2>/dev/null && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
+        test -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager found!" || echo "✗ sdkmanager NOT found!"
+        test -x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager is executable!" || echo "✗ sdkmanager NOT executable!"
         
         # 验证 build-tools 存在
         echo "=== Checking build-tools ==="
