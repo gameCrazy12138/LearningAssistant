@@ -98,21 +98,50 @@ jobs:
         # 设置 aclocal 宏路径
         export ACLOCAL_PATH="/usr/share/aclocal:/usr/local/share/aclocal"
         
-        # 🔥 关键修复：复制 libtool 宏文件到 libffi 的 m4 目录
-        # 解决 LT_SYS_SYMBOL_USCORE 宏未定义的问题
-        LIBFFI_M4_DIR="/home/runner/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/libffi"
-        if [ -d "$LIBFFI_M4_DIR" ]; then
-            find "$LIBFFI_M4_DIR" -name "m4" -type d -exec cp /usr/share/aclocal/libtool.m4 {} \; 2>/dev/null || true
-            find "$LIBFFI_M4_DIR" -name "m4" -type d -exec cp /usr/share/aclocal/ltoptions.m4 {} \; 2>/dev/null || true
-            find "$LIBFFI_M4_DIR" -name "m4" -type d -exec cp /usr/share/aclocal/ltsugar.m4 {} \; 2>/dev/null || true
-            echo "Libtool macros updated"
-        fi
-        
-        # 🔥 不再测试 sdkmanager，因为需要特殊的目录结构
-        # Buildozer 会传递 --sdk_root 参数，能正确调用 sdkmanager
-        echo "✓ SDK setup complete, proceeding with build..."
-        
+        # 🔥 关键修复：在 Buildozer 运行前先创建目录并复制宏文件
+        # 先让 Buildozer 下载 libffi 源码
         cd android_build
+        
+        # 创建临时目录并预下载 libffi
+        mkdir -p /tmp/libffi_m4
+        cp /usr/share/aclocal/libtool.m4 /tmp/libffi_m4/ 2>/dev/null || true
+        cp /usr/share/aclocal/ltoptions.m4 /tmp/libffi_m4/ 2>/dev/null || true
+        cp /usr/share/aclocal/ltsugar.m4 /tmp/libffi_m4/ 2>/dev/null || true
+        cp /usr/share/aclocal/ltversion.m4 /tmp/libffi_m4/ 2>/dev/null || true
+        cp /usr/share/aclocal/lt~obsolete.m4 /tmp/libffi_m4/ 2>/dev/null || true
+        
+        # 🔥 创建一个包装脚本在 autogen.sh 执行前替换宏文件
+        cat > /tmp/patch_libffi.sh << 'PATCH_EOF'
+#!/bin/bash
+# 等待 libffi 目录创建后复制宏文件
+LIBFFI_BASE="/home/runner/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/libffi"
+
+# 轮询等待 libffi 目录创建
+for i in {1..30}; do
+    if [ -d "$LIBFFI_BASE" ]; then
+        # 找到所有 m4 目录并复制宏文件
+        find "$LIBFFI_BASE" -type d -name "m4" 2>/dev/null | while read M4_DIR; do
+            cp /tmp/libffi_m4/*.m4 "$M4_DIR/" 2>/dev/null || true
+            echo "Patched: $M4_DIR"
+        done
+        echo "Libffi macros patched successfully!"
+        exit 0
+    fi
+    sleep 1
+done
+
+echo "Warning: libffi directory not found, patching failed"
+exit 1
+PATCH_EOF
+        
+        chmod +x /tmp/patch_libffi.sh
+        
+        # 在后台运行补丁脚本
+        /tmp/patch_libffi.sh &
+        PATCH_PID=$!
+        
+        # 等待补丁完成
+        sleep 2
         
         # 修改 buildozer.spec 中的路径
         sed -i "s|# android.sdk_path = .*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
@@ -124,6 +153,16 @@ jobs:
         
         # 可选：开启详细日志
         export BUILDOZER_LOGLEVEL=2
+        
+        # 🔥 等待补丁脚本完成
+        echo "Waiting for libffi patch to complete..."
+        wait $PATCH_PID
+        PATCH_STATUS=$?
+        if [ $PATCH_STATUS -eq 0 ]; then
+            echo "✓ Libffi patched successfully!"
+        else
+            echo "✗ Libffi patch failed with status $PATCH_STATUS"
+        fi
         
         # 运行 Buildozer
         buildozer android debug
