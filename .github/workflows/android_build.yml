@@ -81,10 +81,20 @@ jobs:
         mkdir -p /home/runner/.buildozer/android/platform
         ln -sf /home/runner/android-sdk /home/runner/.buildozer/android/platform/android-sdk
         
+        # 🔥 关键修复 2：创建旧版工具路径的符号链接
+        # Buildozer 期望在 tools/bin/sdkmanager 找到 sdkmanager
+        # 但现代 SDK 使用 cmdline-tools/latest，需要创建兼容链接
+        mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools
+        ln -sf /home/runner/android-sdk/cmdline-tools/latest /home/runner/.buildozer/android/platform/android-sdk/tools
+        
         # 验证符号链接
         echo "=== Symlink verification ==="
+        echo "SDK symlink:"
         ls -la /home/runner/.buildozer/android/platform/ || true
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/ || true
+        echo "Tools symlink:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/ || true
+        echo "cmdline-tools verification:"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager 2>/dev/null || echo "sdkmanager not found via tools path"
         
         # 验证 build-tools 存在
         echo "=== Checking build-tools ==="
