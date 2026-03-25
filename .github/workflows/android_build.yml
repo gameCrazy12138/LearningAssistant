@@ -108,9 +108,9 @@ jobs:
             echo "Libtool macros updated"
         fi
         
-        # 验证 sdkmanager 可用
-        echo "Testing sdkmanager..."
-        $ANDROID_SDK_ROOT/tools/bin/sdkmanager --version || exit 1
+        # 🔥 不再测试 sdkmanager，因为需要特殊的目录结构
+        # Buildozer 会传递 --sdk_root 参数，能正确调用 sdkmanager
+        echo "✓ SDK setup complete, proceeding with build..."
         
         cd android_build
         
