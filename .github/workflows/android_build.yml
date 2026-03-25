@@ -135,30 +135,11 @@ jobs:
         export JAVA_HOME=$JAVA_HOME_17_X64
         export PATH=$JAVA_HOME/bin:$PATH
         
-        # 🔥 检查原始 lib64 目录是否存在
-        echo "=== Checking original lib64 ==="
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools/latest/ | grep lib64 || echo "lib64 not found in cmdline-tools/latest"
-        
-        # 验证 sdkmanager 可执行
-        echo "=== Testing sdkmanager ==="
-        chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        
-        # 检查符号链接实际指向
-        echo "Symlink target:"
-        readlink -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "readlink failed"
-        
-        # 检查文件是否存在
-        echo "File check:"
-        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager || echo "sdkmanager not found"
-        
-        # 尝试执行并捕获详细错误
-        echo "=== Running sdkmanager --version ==="
-        /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --version 2>&1 || {
-            echo "sdkmanager failed, checking Java..."
-            java -version 2>&1
-            echo "Trying with explicit Java..."
-            java -jar /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager.jar --version 2>&1 || echo "jar method also failed"
-        }
+        # 🔥 验证 sdkmanager 文件存在且可执行（不测试执行，因为需要特殊的目录结构）
+        echo "=== Verifying sdkmanager ==="
+        test -f /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager file exists!" || echo "✗ sdkmanager file NOT exists!"
+        test -x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager && echo "✓ sdkmanager is executable!" || echo "✗ sdkmanager NOT executable!"
+        ls -la /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
         
         # 验证
         echo "=== SDK verification ==="
