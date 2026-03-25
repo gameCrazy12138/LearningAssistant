@@ -98,50 +98,48 @@ jobs:
         # 设置 aclocal 宏路径
         export ACLOCAL_PATH="/usr/share/aclocal:/usr/local/share/aclocal"
         
-        # 🔥 关键修复：在 Buildozer 运行前先创建目录并复制宏文件
-        # 先让 Buildozer 下载 libffi 源码
-        cd android_build
-        
-        # 创建临时目录并预下载 libffi
-        mkdir -p /tmp/libffi_m4
-        cp /usr/share/aclocal/libtool.m4 /tmp/libffi_m4/ 2>/dev/null || true
-        cp /usr/share/aclocal/ltoptions.m4 /tmp/libffi_m4/ 2>/dev/null || true
-        cp /usr/share/aclocal/ltsugar.m4 /tmp/libffi_m4/ 2>/dev/null || true
-        cp /usr/share/aclocal/ltversion.m4 /tmp/libffi_m4/ 2>/dev/null || true
-        cp /usr/share/aclocal/lt~obsolete.m4 /tmp/libffi_m4/ 2>/dev/null || true
-        
-        # 🔥 创建一个包装脚本在 autogen.sh 执行前替换宏文件
-        cat > /tmp/patch_libffi.sh << 'PATCH_EOF'
+        # 🔥 关键修复：创建包装脚本替换 libffi 的 autogen.sh
+        # Buildozer 会在 libffi 源码目录执行 autogen.sh，我们提前创建一个包装脚本
+        cat > /tmp/wrap_autogen.sh << 'WRAP_EOF'
 #!/bin/bash
-# 等待 libffi 目录创建后复制宏文件
+# 监控 libffi 目录并替换 autogen.sh
+
 LIBFFI_BASE="/home/runner/.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/libffi"
 
 # 轮询等待 libffi 目录创建
-for i in {1..30}; do
+while true; do
     if [ -d "$LIBFFI_BASE" ]; then
-        # 找到所有 m4 目录并复制宏文件
-        find "$LIBFFI_BASE" -type d -name "m4" 2>/dev/null | while read M4_DIR; do
-            cp /tmp/libffi_m4/*.m4 "$M4_DIR/" 2>/dev/null || true
-            echo "Patched: $M4_DIR"
-        done
-        echo "Libffi macros patched successfully!"
-        exit 0
+        # 找到 libffi 源码目录
+        LIBFFI_SRC=$(find "$LIBFFI_BASE" -maxdepth 1 -type d -name "libffi" 2>/dev/null | head -1)
+        
+        if [ -d "$LIBFFI_SRC" ] && [ -f "$LIBFFI_SRC/autogen.sh" ]; then
+            # 备份原始 autogen.sh
+            if [ ! -f "$LIBFFI_SRC/autogen.sh.bak" ]; then
+                cp "$LIBFFI_SRC/autogen.sh" "$LIBFFI_SRC/autogen.sh.bak"
+                
+                # 复制宏文件到 m4 目录
+                M4_DIR="$LIBFFI_SRC/m4"
+                mkdir -p "$M4_DIR"
+                cp /usr/share/aclocal/libtool.m4 "$M4_DIR/" 2>/dev/null || true
+                cp /usr/share/aclocal/ltoptions.m4 "$M4_DIR/" 2>/dev/null || true
+                cp /usr/share/aclocal/ltsugar.m4 "$M4_DIR/" 2>/dev/null || true
+                cp /usr/share/aclocal/ltversion.m4 "$M4_DIR/" 2>/dev/null || true
+                cp /usr/share/aclocal/lt~obsolete.m4 "$M4_DIR/" 2>/dev/null || true
+                
+                echo "✓ Patched libffi at $LIBFFI_SRC"
+            fi
+        fi
     fi
-    sleep 1
+    sleep 0.5
 done
-
-echo "Warning: libffi directory not found, patching failed"
-exit 1
-PATCH_EOF
+WRAP_EOF
         
-        chmod +x /tmp/patch_libffi.sh
+        chmod +x /tmp/wrap_autogen.sh
         
-        # 在后台运行补丁脚本
-        /tmp/patch_libffi.sh &
-        PATCH_PID=$!
+        # 在后台运行包装脚本
+        nohup /tmp/wrap_autogen.sh > /tmp/wrap.log 2>&1 &
         
-        # 等待补丁完成
-        sleep 2
+        cd android_build
         
         # 修改 buildozer.spec 中的路径
         sed -i "s|# android.sdk_path = .*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
@@ -153,16 +151,6 @@ PATCH_EOF
         
         # 可选：开启详细日志
         export BUILDOZER_LOGLEVEL=2
-        
-        # 🔥 等待补丁脚本完成
-        echo "Waiting for libffi patch to complete..."
-        wait $PATCH_PID
-        PATCH_STATUS=$?
-        if [ $PATCH_STATUS -eq 0 ]; then
-            echo "✓ Libffi patched successfully!"
-        else
-            echo "✗ Libffi patch failed with status $PATCH_STATUS"
-        fi
         
         # 运行 Buildozer
         buildozer android debug
