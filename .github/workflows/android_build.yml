@@ -100,7 +100,7 @@ jobs:
         
         # 🔥 关键修复：创建包装脚本替换 libffi 的 autogen.sh
         # Buildozer 会在 libffi 源码目录执行 autogen.sh，我们提前创建一个包装脚本
-        cat > /tmp/wrap_autogen.sh << 'WRAP_EOF'
+        cat > /tmp/wrap_autogen.sh << 'EOF'
 #!/bin/bash
 # 监控 libffi 目录并替换 autogen.sh
 
@@ -132,7 +132,7 @@ while true; do
     fi
     sleep 0.5
 done
-WRAP_EOF
+EOF
         
         chmod +x /tmp/wrap_autogen.sh
         
