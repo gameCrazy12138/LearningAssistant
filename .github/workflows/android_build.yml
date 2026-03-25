@@ -74,32 +74,22 @@ jobs:
         export JAVA_HOME=$JAVA_HOME_17_X64
         export PATH=$JAVA_HOME/bin:$PATH
         
-        # 复制 SDK 到 Buildozer 期望的位置
-        rm -rf /home/runner/.buildozer/android/platform/android-sdk
-        mkdir -p /home/runner/.buildozer/android/platform
-        cp -r /home/runner/android-sdk /home/runner/.buildozer/android/platform/
+        # 使用原始 SDK 和 NDK 路径
+        export ANDROID_SDK_ROOT=/home/runner/android-sdk
+        export ANDROID_HOME=$ANDROID_SDK_ROOT
         
-        ANDROID_SDK_ROOT=/home/runner/.buildozer/android/platform/android-sdk
-        
-        # 修复 sdkmanager 路径：直接复制 cmdline-tools/latest 为 tools
-        rm -rf $ANDROID_SDK_ROOT/tools
-        cp -r $ANDROID_SDK_ROOT/cmdline-tools/latest $ANDROID_SDK_ROOT/tools
-        
-        # 创建 NDK 兼容符号链接
-        ln -sf $ANDROID_SDK_ROOT/ndk/25.2.9519653 $ANDROID_SDK_ROOT/android-ndk-r25b
-        
-        # 设置正确的 NDK 环境变量
+        # 设置 NDK 路径
         export ANDROIDNDKPATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653
         export ANDROID_NDK=$ANDROIDNDKPATH
         export ANDROID_NDK_HOME=$ANDROIDNDKPATH
         export ANDROID_NDK_ROOT=$ANDROIDNDKPATH
         
-        # 设置 aclocal 宏路径
-        export ACLOCAL_PATH="/usr/share/aclocal:/usr/local/share/aclocal"
+        # 添加 SDK 工具到 PATH（原始路径）
+        export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/31.0.0:$PATH
         
-        # 验证 sdkmanager 可用
+        # 测试 sdkmanager 是否可用（必须成功）
         echo "Testing sdkmanager..."
-        $ANDROID_SDK_ROOT/tools/bin/sdkmanager --version || exit 1
+        sdkmanager --version || exit 1
         
         cd android_build
         
@@ -107,9 +97,6 @@ jobs:
         sed -i "s|# android.sdk_path = .*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
         sed -i "s|# android.ndk_path = .*|android.ndk_path = $ANDROIDNDKPATH|" buildozer.spec
         sed -i "s|# android.ndk = .*|android.ndk = 25.2.9519653|" buildozer.spec
-        
-        # 添加 SDK 工具到 PATH
-        export PATH=$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/31.0.0:$PATH
         
         # 可选：开启详细日志
         export BUILDOZER_LOGLEVEL=2
